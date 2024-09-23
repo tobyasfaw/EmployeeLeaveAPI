@@ -58,12 +58,11 @@ def db_session() -> Generator[Session, None, None]:
         raise Exception("No database session available in application context")
 
     session.expire_on_commit = False  
-    session.begin()  # Explicitly begin a transaction
-    # yield session
-    # session.commit() 
+    session.begin()
+
     try:
         yield session
-        session.commit()  # Explicitly commit the transaction
+        session.commit()
     except Exception:
         session.rollback()
         raise
@@ -131,7 +130,7 @@ class PatchEmployeeRequest(PydanticBaseModel):
 # @app.route('/employee/<int:id>', methods=['GET'])
 def get_employee(id):
 
-    # pass
+
     try:
         logging.info(f"Fetching employee with ID: {id}")
         with db_session() as session:
@@ -215,7 +214,7 @@ def post_application():
         logging.debug(f"Received POST data: {data}")
 
         
-        # Check for missing fields
+
         missing_fields = []
         if 'leave_start_date' not in data:
             missing_fields.append('leave_start_date')
@@ -224,7 +223,7 @@ def post_application():
         if 'employee_id' not in data:
             missing_fields.append('employee_id')
         
-        # If there are missing fields, return a 400 response with a message
+
         if missing_fields:
             message = ";".join(f"{field} is missing" for field in missing_fields)
             logging.warning(f"Missing fields in request: {message}")
@@ -236,10 +235,10 @@ def post_application():
         leave_end_date = datetime.strptime(data["leave_end_date"], "%Y-%m-%d").date()
 
         try:
-            # Proceed with the logic for handling valid requests
+
             employee_id = data.get("employee_id")
             logging.debug(f"Looking for employee with ID: {employee_id}")
-            # Validate employee existence
+   
             with db_session() as session:
                 employee = session.query(Employee).filter_by(id=employee_id).first()
                 if not employee:
@@ -254,12 +253,10 @@ def post_application():
                 session.add(new_application)
                 session.commit()
 
-                # Ensure the application ID is set
                 if new_application.id is None:
                     logging.error("Failed to generate application ID.")
                     return make_response(jsonify({"message": "Failed to create application"}), 500)
 
-                # Respond with the created application data
                 application_response = {
                     "id": new_application.id,
                     "leave_start_date": new_application.leave_start_date,
@@ -272,11 +269,9 @@ def post_application():
                 return jsonify(application_response), 200
 
         except Exception as e:
-            # Handle any unexpected errors
             logging.error(f"Unexpected error in post_application: {e}")
             return make_response(jsonify({"message": "Internal Server Error"}), 500)
     except Exception as e:
-        # General error logging
         logging.error(f"Unexpected error in post_application: {e}", exc_info=True)
         return make_response(jsonify({"message": "Internal Server Error"}), 500)
 
